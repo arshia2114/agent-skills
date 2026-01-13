@@ -11,7 +11,7 @@ Portable skills for AI coding assistants. Primarily tested with Claude Code and 
 /plugin marketplace add arvindand/agent-skills
 
 # Install the plugin
-/plugin install agent-skills@agent-skills
+/plugin install agent-skills@arvindand-skills
 ```
 
 Or test locally:
