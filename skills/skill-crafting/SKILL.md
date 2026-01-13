@@ -1,30 +1,122 @@
 ---
-name: writing-skills
-description: "Create and maintain skills for AI agents. Use when creating new skills, fixing broken skills, improving skill discovery, or validating skills work under pressure. Covers structure, testing, Claude Search Optimization, and self-healing patterns."
-allowed-tools: Read, Write, Bash(*)
+name: skill-crafting
+description: "Create, fix, and validate skills for AI agents. Use when user says 'create a skill', 'write a skill', 'build a skill', 'fix my skill', 'skill not working', 'analyze my skill', 'run skill analysis', 'validate skill', 'audit my skills', 'check character budget', 'create a skill from this session', 'turn this into a skill', 'make this reusable', 'can this become a skill', 'could we create a skill', 'should this be a skill', 'check if this could be a skill', or 'any reusable patterns in this session'."
+allowed-tools: Read, Write, Bash(python:*)
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 scripts/format-results.py"
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: "Check if skill-crafting task is complete based on what was asked. If task was evaluating skill-worthiness and answer was 'no' - that's complete. If task was analyzing a skill - were scripts run? If task was creating a skill - does it have valid structure? Only flag incomplete if the specific task type wasn't finished. Respond {\"ok\": true} if task is done, or {\"ok\": false, \"reason\": \"specific missing step\"} if not."
 ---
 
-# Writing Skills
+# Skill Crafting
 
 Create effective, discoverable skills that work under pressure.
 
 ## When to Use
 
 **Creating:**
-
 - "Create a skill for X"
 - "Build a skill to handle Y"
 
-**Maintaining:**
+**From Session History:**
+- "Create a skill from this session"
+- "Turn what we just did into a skill"
+- "Can the database setup we did become a skill?"
+- "Could we create a skill from this?" (evaluate first)
+- "Should this be a skill?" (evaluate first)
 
+**Fixing:**
 - "This skill isn't working"
-- "Skill didn't trigger when it should have"
-- "Update skill after code changes"
-
-**Improving:**
-
-- "Make this skill more discoverable"
 - "Why isn't this skill triggering?"
+- "Skill didn't trigger when it should have"
+
+**Analyzing:**
+- "Analyze my skill for issues"
+- "Run skill analysis"
+- "Check this skill's quality"
+- "Audit all my skills"
+- "Check character budget across skills"
+
+## Analyzing a Skill
+
+When user asks to analyze a skill:
+
+1. **Run scripts first** for mechanical checks:
+   ```bash
+   python3 scripts/analyze-all.py path/to/skill/
+   ```
+
+2. **Read the skill files** for qualitative review:
+   - Read SKILL.md
+   - Read REFERENCES.md (if exists)
+
+3. **Provide holistic feedback** covering:
+   - Script results (CSO, structure, tokens)
+   - Does `allowed-tools` match what the skill needs to do?
+   - Is the workflow clear and actionable?
+   - Are references appropriate and sized correctly?
+   - Missing sections or anti-patterns?
+
+4. **Give verdict** with prioritized recommendations
+
+## Validation Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `analyze-all.py` | Run all checks | `python3 scripts/analyze-all.py path/to/skill/` |
+| `analyze-cso.py` | Check CSO compliance | `python3 scripts/analyze-cso.py path/to/SKILL.md` |
+| `analyze-tokens.py` | Count tokens | `python3 scripts/analyze-tokens.py path/to/SKILL.md` |
+| `analyze-triggers.py` | Find missing triggers | `python3 scripts/analyze-triggers.py path/to/SKILL.md` |
+| `check-char-budget.py` | Check 15K limit | `python3 scripts/check-char-budget.py path/to/skills/` |
+
+**Quick start:**
+```bash
+python3 scripts/analyze-all.py ~/.claude/skills/my-skill/
+python3 scripts/check-char-budget.py ~/.claude/skills/
+```
+
+## Creating from Current Session
+
+When user asks to create a skill from the current session:
+
+1. **Reflect on the conversation** — you already have full context
+2. **Assess skill-worthiness** using criteria below
+3. **If worthy**: Generate SKILL.md using methodology in this skill
+4. **If not**: Explain why (one-off, too scattered, etc.)
+
+### Skill-Worthiness Criteria
+
+| Question | ✅ Extract | ❌ Skip |
+|----------|-----------|---------|
+| Will this repeat? | 3+ future uses likely | One-off task |
+| Non-trivial? | Multi-step coordination | Just "read, edit" |
+| Domain knowledge? | Captures expertise | Generic actions |
+| Generalizable? | Works across projects | Project-specific |
+
+### Quick Assessment
+
+Before creating, answer:
+1. **What pattern repeats?** (e.g., "set up auth with tests")
+2. **What would break without the skill?** (steps someone might skip)
+3. **Who else would use this?** (just me? team? public?)
+
+If you can't answer these clearly → probably not skill-worthy.
+
+### For Evaluative Questions
+
+When user asks "could this be a skill?" or "any reusable patterns?":
+
+1. Review what you did in this session
+2. Identify distinct workflow segments (not exploration/debugging)
+3. Apply criteria above
+4. Recommend yes/no with specific reasoning
+5. If partial: suggest which part is worth extracting
 
 ## Core Principle
 
@@ -73,6 +165,7 @@ skill-name/
 name: skill-name          # lowercase, hyphens, <64 chars
 description: "..."        # CRITICAL - see CSO section
 allowed-tools: Read, Bash(python:*)  # optional
+context: fork             # optional - run in isolated subagent
 ---
 
 # Skill Name

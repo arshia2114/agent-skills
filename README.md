@@ -1,45 +1,44 @@
-# Skills
+# Agent Skills
 
-Portable skills for AI coding assistants. Works with Claude Code, GitHub Copilot, OpenCode, Cursor, and any [Agent Skills](https://agentskills.io)-compatible tool.
+Portable skills for AI coding assistants. Primarily tested with Claude Code and leverages Claude Code-specific features (hooks, context forking), but core functionality works with any [Agent Skills](https://agentskills.io)-compatible tool including GitHub Copilot, OpenCode, and Cursor.
 
 ## Installation
 
-### Option 1: Clone to Claude Skills Directory
+### Option 1: Install as Plugin (Recommended - For Claude Code)
 
 ```bash
-git clone https://github.com/arvindand/agent-skills.git ~/.claude/skills
+# Add the marketplace
+/plugin marketplace add arvindand/agent-skills
+
+# Install the plugin
+/plugin install agent-skills@agent-skills
 ```
 
-This makes skills available to:
-
-- Claude Code (native support)
-- GitHub Copilot (auto-loads `.claude/skills`)
-- OpenCode (Agent Skills standard)
-- VS Code with Copilot
-
-### Option 2: Clone Anywhere and Symlink
+Or test locally:
 
 ```bash
-# Clone to your preferred location
-git clone https://github.com/arvindand/agent-skills.git ~/projects/skills
-
-# Symlink individual skills (Unix/macOS)
-ln -s ~/projects/skills/context7 ~/.claude/skills/context7
-ln -s ~/projects/skills/github-navigator ~/.claude/skills/github-navigator
-
-# Windows (run as Administrator)
-mklink /D %USERPROFILE%\.claude\skills\context7 %USERPROFILE%\projects\skills\context7
+claude --plugin-dir /path/to/agent-skills
 ```
+
+### Option 2: Copy to Skills Directory
+
+```bash
+# Clone and copy skills
+git clone https://github.com/arvindand/agent-skills.git
+cp -r agent-skills/skills/* ~/.claude/skills/
+```
+
+Works with Claude Code, GitHub Copilot, OpenCode, Cursor, and VS Code with Copilot.
 
 ## Available Skills
 
 | Skill | Description | Use For |
 |-------|-------------|---------|
-| [context7](context7/) | Library documentation lookup via Context7 REST API | Getting up-to-date docs for React, Next.js, Prisma, etc. |
-| [github-navigator](github-navigator/) | GitHub operations via gh CLI with dynamic command discovery | All GitHub operations: files, issues, PRs, releases, actions |
-| [maven-tools](maven-tools/) | JVM dependency intelligence via [Maven Tools MCP server](https://github.com/arvindand/maven-tools-mcp) | Version checks, upgrade planning, CVE scanning, license compliance |
-| [ui-ux-design](ui-ux-design/) | Create production-grade interfaces with strong UX foundations | Building functional, accessible, visually distinctive UI/UX |
-| [writing-skills](writing-skills/) | Create effective, discoverable skills for AI agents | Creating new skills, improving discovery, testing under pressure |
+| [context7](skills/context7/) | Library documentation lookup via Context7 REST API | Getting up-to-date docs for React, Next.js, Prisma, etc. |
+| [github-navigator](skills/github-navigator/) | GitHub operations via gh CLI with deep analysis mode | All GitHub operations + codebase analysis via cloning |
+| [maven-tools](skills/maven-tools/) | JVM dependency intelligence via [Maven Tools MCP server](https://github.com/arvindand/maven-tools-mcp) | Version checks, upgrade planning, CVE scanning, license compliance |
+| [skill-crafting](skills/skill-crafting/) | Create, fix, validate skills + generate from session history | Creating skills, fixing issues, CSO compliance, session-to-skill conversion |
+| [ui-ux-design](skills/ui-ux-design/) | Create production-grade interfaces with strong UX foundations | Building functional, accessible, visually distinctive UI/UX |
 
 ## Usage
 
@@ -52,22 +51,50 @@ You: "How do I use React hooks?"
 You: "Show me open issues in facebook/react"
 → github-navigator skill loads and uses gh CLI to list issues
 
+You: "Analyze the architecture of vercel/next.js"
+→ github-navigator clones the repo and provides deep codebase analysis
+
 You: "Should I upgrade Spring Boot from 2.7 to 3.2?"
 → maven-tools skill loads and analyzes versions, CVEs, breaking changes
 
 You: "Create a skill for processing PDFs"
-→ writing-skills skill loads and guides you through skill creation
+→ skill-crafting loads and guides you through skill creation
+
+You: "Why isn't my skill triggering?"
+→ skill-crafting analyzes CSO issues and character budget problems
+
+You: "Create a skill from this session called deploy-pipeline"
+→ skill-crafting analyzes session history and generates a reusable skill
+
+You: "Could we turn what we did into a skill?"
+→ skill-crafting evaluates the session and advises if it's skill-worthy
 ```
 
 No manual invocation needed — the AI determines when each skill is relevant.
 
 ## Documentation
 
-See [writing-skills/REFERENCES.md](writing-skills/REFERENCES.md) for best practices and patterns.
+See [skill-crafting/REFERENCES.md](skills/skill-crafting/REFERENCES.md) for best practices and patterns.
 
-## Compatibility
+### Cross-Platform Design
 
-Works with [Agent Skills](https://agentskills.io)-compatible tools: Claude Code, GitHub Copilot, OpenCode, Cursor, and others.
+Skills use **progressive enhancement**:
+
+- **Core fields** (`name`, `description`) work everywhere
+- **Claude Code features** should be ignored by other platforms
+
+### Claude Code Enhancements
+
+When running in Claude Code, these skills leverage additional features:
+
+| Feature | Skills | What It Does |
+|---------|--------|--------------|
+| Context forking | github-navigator | Runs in isolated subagent to avoid polluting main context |
+| Stop hooks | skill-crafting, ui-ux-design | Verifies task completion before declaring done |
+| PostToolUse hooks | github-navigator, skill-crafting | Validates output and formats results |
+| Tool restrictions | All | Limits which tools each skill can use |
+
+Other platforms get core functionality without these enhancements.
 
 ## Contributing
 
@@ -76,7 +103,6 @@ Works with [Agent Skills](https://agentskills.io)-compatible tools: Claude Code,
 - Frequent operations with zero context overhead
 - CLI tools that can be discovered via `--help`
 - Discovery patterns that teach AI dynamically
-- Cross-platform workflows
 
 > Note: Would appreciate contributions or references to implementations for other useful skills, especially geared toward helping senior devs focused on backend, architecture, and DevOps.
 
@@ -86,11 +112,11 @@ I'm biased towards skills over MCP. Here's why.
 
 ### Skills are cheaper and at least as effective as MCP tools when done well
 
-MCP loads all tool schemas into every conversation whether you use them or not. Ten tools? That's roughly 1,000 tokens added to every single request.
+MCP loads all tool schemas into every conversation whether you use them or not. Ten tools? That's roughly 1,000 tokens added to every single request. Update: The tool search tool reduces this overhead but it still exists (See <https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool>)
 
 Skills are free until you need them. When a skill triggers, you pay for ~100 words of metadata. That's it.
 
-> Anthropic found that using code execution to call tools (what skills enable) cut token usage from >150,000 to 2,000. That's a 98.7% reduction. <https://www.anthropic.com/engineering/code-execution-with-mcp>
+> Anthropic found that using code execution patterns (what skills enable) cut token usage from >150,000 to 2,000. That's a 98.7% reduction. <https://www.anthropic.com/engineering/code-execution-with-mcp>
 
 ### If there's a CLI, use a skill
 
@@ -119,10 +145,6 @@ Use MCP when:
 - No CLI exists and you can't easily wrap the API
 
 Skills and MCP can work together. You can write a skill that teaches the AI how to use your MCP servers effectively.
-
-### Summary
-
-**Default to skills.** They're free when idle, stay current with CLI changes, and work everywhere. Use MCP when you need its specific capabilities or when there's an official integration worth using.
 
 ## License
 

@@ -1,0 +1,32 @@
+{
+  "name": "agent-skills",
+  "owner": {
+    "name": "Arvind Menon",
+    "email": "arvindand@gmail.com"
+  },
+  "metadata": {
+    "description": "Portable skills library for AI coding assistants"
+  },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "source": ".",
+      "description": "Portable skills library: documentation lookup, GitHub operations, dependency intelligence, UI/UX patterns, and skill crafting",
+      "version": "1.0.0",
+      "author": {
+        "name": "Arvind Menon"
+      },
+      "homepage": "https://arvindand.hashnode.dev/why-i-reach-for-skills-before-mcp",
+      "repository": "https://github.com/arvindand/agent-skills",
+      "license": "MIT",
+      "keywords": [
+        "skills",
+        "claude-code",
+        "context7",
+        "github",
+        "maven-tools-mcp",
+        "ui-ux"
+      ]
+    }
+  ]
+}

@@ -550,14 +550,14 @@ p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 
 ## External Resources
 
-| Resource | URL | Use For |
-|----------|-----|---------|
-| WebAIM Contrast | webaim.org/resources/contrastchecker | Contrast validation |
-| Google Fonts | fonts.google.com | Free web fonts |
-| Fontshare | fontshare.com | Premium free fonts |
-| Coolors | coolors.co | Palette generation |
-| Heroicons | heroicons.com | Clean SVG icons |
-| Lucide | lucide.dev | Open source icons |
-| Radix Icons | icons.radix-ui.com | UI icons |
+| Resource | Use For |
+|----------|---------|
+| [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker) | Contrast validation |
+| [Google Fonts](https://fonts.google.com) | Free web fonts |
+| [Fontshare](https://fontshare.com) | Premium free fonts |
+| [Coolors](https://coolors.co) | Palette generation |
+| [Heroicons](https://heroicons.com) | Clean SVG icons |
+| [Lucide](https://lucide.dev) | Open source icons |
+| [Radix Icons](https://icons.radix-ui.com) | UI icons |
 
 ---

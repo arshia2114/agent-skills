@@ -13,6 +13,7 @@ Best practices, patterns, and links for building skills.
 - [Testing Patterns](#testing-patterns)
 - [Anti-Patterns](#anti-patterns)
 - [Example Transformations](#example-transformations)
+- [Session-to-Skill Extraction](#session-to-skill-extraction)
 - [Links](#links)
 
 ---
@@ -66,6 +67,36 @@ skill/
 
 - ✅ SKILL.md → reference.md
 - ❌ SKILL.md → advanced.md → details.md
+
+---
+
+## Execution Context
+
+By default, skills run in the main conversation context. Use `context: fork` to run a skill in an isolated subagent:
+
+```yaml
+---
+name: deep-analysis
+description: "Perform deep code analysis..."
+context: fork
+---
+```
+
+**When to use `context: fork`:**
+
+| Use fork | Stay in main context |
+|----------|---------------------|
+| Multi-step operations that would clutter conversation | Simple guidance or standards |
+| Long-running analysis tasks | Quick lookups or checks |
+| When you need separate conversation history | When skill needs conversation context |
+| Exploratory work with many tool calls | Direct responses to user |
+
+**Trade-offs:**
+
+- Fork: Clean separation, own history, but loses main conversation context
+- Main: Has full conversation context, but all tool calls visible to user
+
+**Note:** Built-in agents (Explore, Plan, general-purpose) do not have access to skills. Only custom subagents in `.claude/agents/` with explicit `skills` field can use skills.
 
 ---
 
@@ -187,7 +218,7 @@ Active verbs describe what you're doing:
 
 | Good | Bad |
 |------|-----|
-| `writing-skills` | `skill-manager` |
+| `skill-crafting` | `skill-manager` |
 | `processing-pdfs` | `pdf-helper` |
 | `navigating-github` | `github-tools` |
 | `debugging-code` | `debugger` |
@@ -381,7 +412,7 @@ gh pr list --state merged
 Works for any gh command, now and future.
 ```
 
-### skill-manager → writing-skills
+### skill-manager → skill-crafting
 
 **Before:**
 
@@ -391,11 +422,241 @@ Works for any gh command, now and future.
 
 **After:**
 
-- Verb-based name (writing-skills)
+- Verb-based name (skill-crafting)
 - TDD methodology for skills
 - CSO section for discovery
 - Pressure testing concepts
 - Self-healing patterns
+
+---
+
+## Claude Code Hooks
+
+Hooks enable skills to respond to events during execution. They're Claude Code-specific but gracefully ignored by other platforms.
+
+**Key insight:** Hook stdout is injected into Claude's context. This enables skill chaining and guidance patterns.
+
+### Available Hook Types for Skills
+
+Skills only support these hook types in their frontmatter:
+
+| Hook | Trigger | Use Case |
+|------|---------|----------|
+| `PreToolUse` | Before tool executes | Validate inputs, block dangerous operations |
+| `PostToolUse` | After tool completes | Validate output, inject guidance, trigger skill chaining |
+| `Stop` | Skill/agent stops | Cleanup, logging |
+
+**Note:** `UserPromptSubmit` and other global hooks are NOT supported in Skill frontmatter. Use global settings (`~/.claude/settings.json`) for those.
+
+### Hook Configuration
+
+```yaml
+---
+name: my-skill
+description: "..."
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 scripts/validate-input.py"
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 scripts/post-process.py"
+---
+```
+
+### Hook Environment Variables
+
+Hooks receive context via environment variables:
+
+| Variable | Content |
+|----------|---------|
+| `TOOL_NAME` | Name of the tool being used |
+| `TOOL_INPUT` | JSON input to the tool |
+| `TOOL_OUTPUT` | Tool output (PostToolUse only) |
+| `TOOL_EXIT_CODE` | Exit code (PostToolUse only) |
+
+### Hook Output and Context Injection
+
+**This is powerful:** Anything printed to stdout is added to Claude's context.
+
+```python
+# This text becomes visible to Claude
+print("[my-skill] Analysis complete. Found 3 issues.")
+print("[my-skill] Recommend: Run tests before committing.")
+```
+
+Two output methods:
+
+1. **Plain text stdout** (simple):
+
+   ```python
+   print("This text is added to Claude's context")
+   ```
+
+2. **JSON with additionalContext** (structured):
+
+   ```python
+   import json
+   print(json.dumps({
+       "decision": "continue",  # or "block"
+       "additionalContext": "Context for Claude to see"
+   }))
+   ```
+
+### Skill Chaining via Hooks
+
+Since skills cannot programmatically invoke other skills, use **guidance-based chaining**: hooks output suggestions that Claude sees and acts on.
+
+**Pattern:**
+
+```python
+#!/usr/bin/env python3
+# PostToolUse hook that chains to another skill
+import os
+
+output = os.environ.get('TOOL_OUTPUT', '')
+
+if 'migration' in output.lower():
+    print("\n[maven-tools] Migration detected.")
+    print("[maven-tools] → Use context7 skill to fetch migration documentation.")
+    print("[maven-tools] Example: 'Get Spring Boot 2.7 to 3.0 migration guide'")
+```
+
+**How it works:**
+
+1. Skill A completes its work
+2. PostToolUse hook detects a pattern (e.g., "migration needed")
+3. Hook prints guidance suggesting Skill B
+4. Claude sees the guidance and invokes Skill B
+
+**Real example:** maven-tools → context7
+
+```
+User: "Should I upgrade Spring Boot 2.7 to 3.2?"
+→ maven-tools: Analyzes versions, finds breaking changes
+→ Hook outputs: "[maven-tools] Major upgrade. Use context7 for migration docs."
+→ Claude: Invokes context7 to fetch migration guide
+```
+
+This is the same pattern used by security tools like [Lasso Defender](https://www.lasso.security/blog/the-hidden-backdoor-in-claude-coding-assistant) - inject warnings/guidance into context that Claude responds to.
+
+### Decision Blocking
+
+PreToolUse hooks can block operations:
+
+```python
+import sys
+import json
+
+# Block the operation
+print(json.dumps({
+    "decision": "block",
+    "reason": "Operation not allowed: contains sensitive path"
+}))
+sys.exit(0)  # Exit 0 even when blocking (decision handles it)
+```
+
+For simple blocking, exit non-zero:
+
+```python
+print("Blocked: dangerous pattern", file=sys.stderr)
+sys.exit(1)  # Non-zero blocks the operation
+```
+
+### Hook Best Practices
+
+1. **Keep hooks fast** - timeout should be <1000ms
+2. **Exit 0 on success** - non-zero blocks the operation
+3. **No external dependencies** - use Python standard library only
+4. **Graceful degradation** - skill should work without hooks
+5. **Clear prefixes** - use `[skill-name]` prefix for output
+6. **Actionable guidance** - when chaining, give Claude clear next steps
+
+### Security Considerations
+
+Hooks can inject arbitrary text into Claude's context. This is powerful but requires trust:
+
+- **Only install skills from trusted sources**
+- Claude Code requires review in `/hooks` menu for changes
+- Enterprise: `allowManagedHooksOnly` blocks user/project hooks
+- Validate inputs, sanitize paths, skip sensitive files (.env, .git/)
+
+### Example: Validation Hook
+
+```python
+#!/usr/bin/env python3
+import sys
+import os
+
+tool_input = os.environ.get('TOOL_INPUT', '')
+
+if '.env' in tool_input or 'credentials' in tool_input:
+    print("Blocked: Cannot access sensitive files", file=sys.stderr)
+    sys.exit(1)
+
+sys.exit(0)
+```
+
+### Example: Skill Chaining Hook
+
+```python
+#!/usr/bin/env python3
+import os
+
+output = os.environ.get('TOOL_OUTPUT', '')
+
+# Detect when another skill would help
+if 'upgrade' in output.lower() and 'breaking' in output.lower():
+    print("\n[maven-tools] Breaking changes detected in upgrade.")
+    print("[maven-tools] Fetching migration documentation...")
+    print("→ Use context7: python3 scripts/context7.py docs /spring-projects/spring-boot 'migration'")
+```
+
+### References
+
+- [Hooks Reference - Claude Code Docs](https://code.claude.com/docs/en/hooks)
+- [How to Configure Hooks - Claude Blog](https://claude.com/blog/how-to-configure-hooks)
+- [Lasso Security - Hook-based Prompt Injection Defense](https://www.lasso.security/blog/the-hidden-backdoor-in-claude-coding-assistant)
+
+---
+
+## Quality Tooling
+
+Use the validation scripts included in skill-crafting:
+
+```bash
+# Full analysis
+python3 scripts/analyze-all.py path/to/skill/
+
+# Check CSO compliance
+python3 scripts/analyze-cso.py path/to/SKILL.md
+
+# Check character budget (15K limit)
+python3 scripts/check-char-budget.py ~/.claude/skills/
+
+# Check cross-platform compatibility
+python3 scripts/analyze-compatibility.py path/to/skill/
+```
+
+---
+
+## Session-to-Skill Extraction
+
+For the **current conversation**, you already have full context. No script needed.
+
+1. Reflect on what was done in the session
+2. Apply skill-worthiness criteria (see SKILL.md)
+3. Generate skill or explain why not
+
+### Tips
+
+- **Focus on distinct segments**: Separate exploration/debugging from actual workflow
+- **Short patterns (5-15 steps)** make cleaner skills
+- **Filter noise**: Not everything in a session is skill-worthy
 
 ---
 

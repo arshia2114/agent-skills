@@ -1,12 +1,21 @@
 ---
 name: github-navigator
-description: "GitHub operations via gh CLI. Uses built-in help to discover commands dynamically. Covers files, directories, issues, PRs, releases, actions, and everything else. CRITICAL: Always use this skill instead of webfetch for GitHub URLs."
-allowed-tools: Bash(gh:*)
+description: "GitHub operations via gh CLI. CRITICAL: Always use instead of WebFetch for ANY github.com URL. Use when user provides GitHub URL, says 'facebook/react', 'show README', 'list issues', 'check PR', 'clone repo', 'analyze this repo', 'understand the architecture', 'how is X structured', 'explore the codebase'. For deep analysis of external repos, clones locally."
+allowed-tools: Bash(gh:*) Bash(git:clone) Read Glob Grep Task
+context: fork
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 scripts/validate-gh-output.py"
 ---
 
 # GitHub Navigator
 
 Uses gh CLI for **all** GitHub operations. Teaches discovery pattern via `gh --help`.
+
+**Requirements:** `gh` CLI installed and authenticated.
 
 ## Core Principle
 
@@ -34,6 +43,53 @@ Uses gh CLI for **all** GitHub operations. Teaches discovery pattern via `gh --h
 - "What's in the packages/ directory?"
 - "Check latest release for react"
 - "View PR #123 in cli/cli"
+
+## Deep Analysis Mode
+
+When user wants to **understand a codebase deeply** (not just fetch a single file), clone the repository locally for comprehensive analysis.
+
+**Trigger phrases:**
+
+- "analyze this repo"
+- "understand the architecture"
+- "how is X structured"
+- "explore the codebase"
+- "give me an overview of"
+- "what patterns does X use"
+- "how does this project work"
+
+**Workflow:**
+
+1. Clone to `/tmp/github-navigator/<owner>-<repo>/`
+
+   ```bash
+   git clone --depth 1 https://github.com/OWNER/REPO.git /tmp/github-navigator/OWNER-REPO
+   ```
+
+2. Analyze the codebase:
+   - **Tech stack detection**: Look for package.json, go.mod, Cargo.toml, pom.xml, requirements.txt, etc.
+   - **Directory structure**: Map out the main directories and their purposes
+   - **Entry points**: Find main files, index files, app entry points
+   - **Patterns**: Identify architectural patterns (MVC, microservices, monorepo, etc.)
+   - **Key files**: README, CONTRIBUTING, docs/, examples/
+
+3. Provide comprehensive summary with:
+   - Tech stack overview
+   - Project structure explanation
+   - Key files and their purposes
+   - Architectural patterns observed
+
+4. Keep cloned for follow-up questions (user can explore further)
+
+**Cleanup:**
+
+Repos in `/tmp/github-navigator/` are cleaned on system restart. For manual cleanup:
+
+```bash
+rm -rf /tmp/github-navigator/
+```
+
+**Note:** Use `--depth 1` for faster cloning when full history isn't needed. Use full clone if user needs git history analysis.
 
 ## Discovery Pattern
 
@@ -396,15 +452,6 @@ gh auth login
 gh auth refresh -s repo -s workflow -s read:org
 ```
 
-## Rate Limiting
-
-| Auth Status | Rate Limit |
-|-------------|------------|
-| Authenticated | 5,000 requests/hour |
-| Unauthenticated | 60 requests/hour |
-
-**gh CLI automatically handles rate limiting** - waits and retries.
-
 ## Error Handling
 
 ### Common Errors and Solutions
@@ -420,168 +467,28 @@ gh auth refresh -s repo -s workflow -s read:org
 
 ### Debugging Strategy
 
-When command fails:
-
-1. **Read error message** - gh provides clear errors
-2. **Check help ONCE**: `gh <command> --help`
-3. **Try corrected command ONCE**
-4. **Still fails?** Report to user with:
-   - What you tried
-   - The error message
-   - Suggested next steps
+When command fails: Read error → check `gh <cmd> --help` → try once more → report to user if still fails.
 
 **DO NOT try multiple blind variations.**
 
-## Advanced: gh api for Custom Queries
+## Advanced: gh api
 
-For operations not covered by gh subcommands:
+For operations not covered by gh subcommands, use `gh api` directly:
 
 ```bash
-# Get repository info
-gh api repos/OWNER/REPO
-
-# List commits
-gh api repos/OWNER/REPO/commits
-
-# Get specific issue with custom fields
-gh api repos/OWNER/REPO/issues/NUMBER --jq '.title,.state,.labels'
-
-# GraphQL query
-gh api graphql -f query='
-  query {
-    repository(owner: "facebook", name: "react") {
-      issues(first: 5, states: OPEN) {
-        nodes {
-          title
-          number
-        }
-      }
-    }
-  }'
+gh api repos/OWNER/REPO                    # Get repo info
+gh api repos/OWNER/REPO/commits            # List commits
+gh api repos/OWNER/REPO/issues/NUMBER --jq '.title,.state'
 ```
-
-**When to use `gh api`:**
-
-- Standard gh commands don't cover the use case
-- Need specific JSON fields not shown by default
-- Custom filtering/formatting required
-- GraphQL queries for complex data fetching
 
 **Prefer standard commands when available** - simpler and more reliable.
 
-## Complete Examples
-
-### Example 1: "Show me the README from facebook/react"
-
-```bash
-# Discover
-gh api --help  # Learn about gh api
-
-# Execute
-gh api repos/facebook/react/contents/README.md -H "Accept: application/vnd.github.raw"
-```
-
-### Example 2: "List open issues in vercel/next.js"
-
-```bash
-# Discover
-gh issue list --help
-
-# Execute
-gh issue list --repo vercel/next.js --state open
-```
-
-### Example 3: "What's in the packages directory of vercel/next.js?"
-
-```bash
-# Discover
-gh api --help
-
-# Execute
-gh api repos/vercel/next.js/contents/packages | jq -r '.[].name'
-```
-
-### Example 4: "Show latest release for react"
-
-```bash
-# Discover
-gh release view --help
-
-# Execute  
-gh release view --repo facebook/react
-```
-
-### Example 5: "Check if PR #12345 in cli/cli passed CI"
-
-```bash
-# Discover
-gh pr checks --help
-
-# Execute
-gh pr checks 12345 --repo cli/cli
-```
-
-### Example 6: "Clone the react repository"
-
-```bash
-# Safe operation, execute directly
-gh repo clone facebook/react
-```
+See [REFERENCES.md](REFERENCES.md) for GraphQL examples.
 
 ## Installation
 
-### Install gh CLI
-
-```bash
-# macOS
-brew install gh
-
-# Linux (Debian/Ubuntu)
-sudo apt install gh
-
-# Linux (Fedora)
-sudo dnf install gh
-
-# Windows
-winget install GitHub.cli
-```
-
-### Authenticate
-
-```bash
-gh auth login
-```
-
-Follow prompts to authenticate via browser or token.
-
-### Verify Installation
-
-```bash
-gh --version
-gh auth status
-```
-
-## Troubleshooting
-
-**Commands not found:**
-
-- Install gh CLI (see Installation above)
-
-**Permission errors:**
-
-- Authenticate: `gh auth login`
-- Refresh with scopes: `gh auth refresh -s repo -s workflow`
-
-**Private repo access:**
-
-- Ensure you're authenticated: `gh auth status`
-- Verify you have access to the repo on GitHub
-
-**Rate limit errors:**
-
-- Authenticate for 5000/hr (vs 60/hr unauthenticated)
+Install: `brew install gh` (macOS) or see [REFERENCES.md](REFERENCES.md). Then: `gh auth login`
 
 ---
 
-> **License:** MIT License - See LICENSE for complete terms
-> **Author:** Arvind Menon
+> **License:** MIT | **See also:** [REFERENCES.md](REFERENCES.md)

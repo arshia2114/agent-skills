@@ -1,6 +1,7 @@
 ---
 name: maven-tools
 description: "JVM dependency intelligence via Maven Tools MCP server. Use when user asks about Java/Kotlin/Scala dependencies, versions, upgrades, CVEs, or licenses. Use when analyzing pom.xml, build.gradle, or any Maven Central dependency. Use when user says 'check my dependencies', 'should I upgrade X', 'is this version safe', or 'what's the latest version of Y'."
+allowed-tools: mcp__maven-tools__*
 ---
 
 # Maven Tools
@@ -78,9 +79,9 @@ Control which versions are returned:
 
 1. Call `compare_dependency_versions` with current and target versions
 2. If major upgrade detected, note breaking changes likely
-3. Use Context7 tools for migration documentation:
-   - `resolve-library-id` with "spring boot migration"
-   - `query-docs` with returned ID
+3. Use context7 skill for migration documentation:
+   - `scripts/context7.py search "spring boot"`
+   - `scripts/context7.py docs "<library-id>" "migration guide"`
 
 ### "Is this dependency safe?"
 
@@ -129,8 +130,8 @@ User: "Should I upgrade Spring Boot from 2.7 to 3.2?"
 → maven-tools: compare_dependency_versions
   Result: Major upgrade, 3.2.1 available, no CVEs
 
-→ context7: resolve_library_id("spring boot")
-→ context7: get_docs(id, "2.7 to 3 migration guide")
+→ context7: scripts/context7.py search "spring boot"
+→ context7: scripts/context7.py docs "/spring-projects/spring-boot" "2.7 to 3 migration"
   Result: javax→jakarta migration steps, config changes
 
 → Combined response: Version analysis + migration steps
@@ -196,8 +197,8 @@ This separation means:
   includeSecurityScan: true
 
 → If major upgrade available, delegate to context7 skill:
-  resolve_library_id("spring boot")
-  get_docs(id, "2.7 to 3 migration guide")
+  scripts/context7.py search "spring boot"
+  scripts/context7.py docs "/spring-projects/spring-boot" "2.7 to 3 migration"
 ```
 
 ### Example 3: Full project audit
@@ -216,6 +217,7 @@ This separation means:
 
 | Issue | Action |
 |-------|--------|
+| MCP tools unavailable | Inform user: "Maven Tools MCP server not configured. Install from <https://github.com/arvindand/maven-tools-mcp> — use `latest-noc7` image since we have context7 skill for docs." |
 | Dependency not found | Verify groupId:artifactId format, check Maven Central |
 | Context7 skill unavailable | Fall back to web search for documentation |
 | Security scan slow | Results still return, CVE data may be partial |

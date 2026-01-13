@@ -1,12 +1,14 @@
 ---
 name: context7
 description: "Fetch up-to-date library documentation via Context7 REST API. Use when needing current API docs, framework patterns, or code examples for any library. Use when user asks about React, Next.js, Prisma, Express, Vue, Angular, Svelte, or any npm/PyPI package. Use when user says 'how do I use X library', 'what's the API for Y', or needs official documentation. Lightweight alternative to Context7 MCP with no persistent context overhead."
-allowed-tools: Read, Bash(python:*)
+allowed-tools: Bash(python:*)
 ---
 
 # Context7 Documentation Lookup Skill
 
 Fetch current library documentation, API references, and code examples without MCP context overhead.
+
+**Works on all platforms via REST API.**
 
 ## When to Use
 
@@ -234,6 +236,7 @@ python3 scripts/context7.py search "react"
 
 ## Notes
 
+- **Script path**: All `scripts/context7.py` commands are relative to this skill's directory
 - **No MCP overhead**: Uses REST API directly, no tool schemas in context
 - **API key optional**: Works without key, but rate-limited. Get free key at [context7.com/dashboard](https://context7.com/dashboard)
 - **Topic filtering**: Use specific topics for focused results

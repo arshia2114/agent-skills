@@ -1,0 +1,21 @@
+{
+  "name": "agent-skills",
+  "version": "1.0.0",
+  "description": "Portable skills library: documentation lookup, GitHub operations, dependency intelligence, UI/UX patterns, and skill crafting",
+  "author": {
+    "name": "Arvind Menon",
+    "url": "https://github.com/arvindand"
+  },
+  "repository": "https://github.com/arvindand/agent-skills",
+  "homepage": "https://agentskills.io",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "claude-code",
+    "ai-coding",
+    "github",
+    "documentation",
+    "maven",
+    "ui-ux"
+  ]
+}

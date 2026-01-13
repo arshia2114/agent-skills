@@ -1,7 +1,12 @@
 ---
 name: ui-ux-design
 description: "Create production-grade frontend interfaces with strong UX and visual craft. Use when building web components, pages, dashboards, forms, landing pages, or any UI. Use when user says 'build a form', 'create a dashboard', 'design a component', 'make a landing page', or asks for UI/UX work."
-allowed-tools: Read
+allowed-tools: Read, Write, Edit
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: "Check if UI/UX task is complete based on what was asked. If task was advice/consultation only - no code checklist applies. If code was written: verify interactive states, semantic HTML, focus states, labels (for forms), and contrast were considered for what was built. Only flag missing items that apply to the specific output. Respond {\"ok\": true} if done, or {\"ok\": false, \"reason\": \"specific missing item\"} if not."
 ---
 
 # UI/UX Design
