@@ -46,28 +46,22 @@ Once installed, skills activate automatically when relevant to your prompt:
 
 ```txt
 You: "How do I use React hooks?"
-→ context7 skill loads and fetches React hooks documentation
+→ context7 fetches up-to-date React hooks documentation
 
 You: "Show me open issues in facebook/react"
-→ github-navigator skill loads and uses gh CLI to list issues
+→ github-navigator uses gh CLI to list issues
 
 You: "Analyze the architecture of vercel/next.js"
-→ github-navigator clones the repo and provides deep codebase analysis
+→ github-navigator clones repo for deep codebase analysis
 
 You: "Should I upgrade Spring Boot from 2.7 to 3.2?"
-→ maven-tools skill loads and analyzes versions, CVEs, breaking changes
+→ maven-tools analyzes versions, CVEs, breaking changes
 
-You: "Create a skill for processing PDFs"
-→ skill-crafting loads and guides you through skill creation
+You: "Build me a login form with dark mode"
+→ ui-ux-design creates accessible component with proper states
 
-You: "Why isn't my skill triggering?"
-→ skill-crafting analyzes CSO issues and character budget problems
-
-You: "Create a skill from this session called deploy-pipeline"
-→ skill-crafting analyzes session history and generates a reusable skill
-
-You: "Could we turn what we did into a skill?"
-→ skill-crafting evaluates the session and advises if it's skill-worthy
+You: "Create a skill from this session"
+→ skill-crafting evaluates patterns and generates reusable skill
 ```
 
 No manual invocation needed — the AI determines when each skill is relevant.
