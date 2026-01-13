@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "agent-skills",
-      "source": ".",
+      "source": "./",
       "description": "Portable skills library: documentation lookup, GitHub operations, dependency intelligence, UI/UX patterns, and skill crafting",
       "version": "1.0.0",
       "author": {
