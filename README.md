@@ -46,9 +46,9 @@ Customize Claude's response style via `/output-style`:
 
 | Style | Description |
 |-------|-------------|
-| socratic | Teaches through questions. Backs off when you ask for direct answers. |
-| speed-run | Max 3 sentences. Code first, explanations on request. |
-| pair-programmer | Thinks aloud, invites interruption. Best for complex problems. |
+| [socratic](output-styles/socratic.md) | Teaches through questions. Backs off when you ask for direct answers. |
+| [speed-run](output-styles/speed-run.md) | Max 3 sentences. Code first, explanations on request. |
+| [pair-programmer](output-styles/pair-programmer.md) | Thinks aloud, invites interruption. Best for complex problems. |
 
 ## Usage
 
